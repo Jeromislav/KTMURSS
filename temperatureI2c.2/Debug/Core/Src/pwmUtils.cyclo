@@ -1,0 +1,4 @@
+../Core/Src/pwmUtils.c:8:6:initPwm	2
+../Core/Src/pwmUtils.c:20:5:mapToPwm	3
+../Core/Src/pwmUtils.c:36:5:circularIncrementPwm	2
+../Core/Src/pwmUtils.c:49:5:temperaturePwm	1
