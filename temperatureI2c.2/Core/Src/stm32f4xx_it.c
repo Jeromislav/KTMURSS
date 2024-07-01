@@ -22,6 +22,8 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdlib.h>	//c standard library for the print function
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,7 +43,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
+bool provjeraPrvi = false;
+bool provjeraDrugi = false;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -55,7 +58,8 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-
+extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim3;
 /* USER CODE BEGIN EV */
 extern TIM_HandleTypeDef htim3;
 /* USER CODE END EV */
@@ -198,20 +202,104 @@ void SysTick_Handler(void)
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
 
-/* USER CODE BEGIN 1 */
 /**
-  * @brief This function handles Debug monitor.
+  * @brief This function handles EXTI line 2 interrupt.
+  */
+void EXTI2_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI2_IRQn 0 */
+	printf("EXTI2\n");
+		HAL_NVIC_DisableIRQ(EXTI2_IRQn);
+provjeraPrvi = true;
+		//HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+	if (HAL_TIM_Base_Start_IT(&htim3) != HAL_OK) // Pali interrupt (Timer kreće proitzvoditi interrupt), interrupt svaku sekundu ispisuje temp neovisno o poslu u glavnoj petlji
+	    {
+	      /* Starting Error */
+	      Error_Handler();//pomaže da precizno mjerimo temp, na taj na�?in sam postigao da ne izgubim ni jedno o�?itanje temperature
+	    }
+
+  /* USER CODE END EXTI2_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(start_Pin);
+  /* USER CODE BEGIN EXTI2_IRQn 1 */
+
+  /* USER CODE END EXTI2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM2 global interrupt.
+  */
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+
+  /* USER CODE END TIM2_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim2);
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+
+  /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM3 global interrupt.
   */
 void TIM3_IRQHandler(void)
 {
-  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
+  /* USER CODE BEGIN TIM3_IRQn 0 */
+	printf("TIM3\n");
+	if (HAL_TIM_Base_Stop_IT(&htim3) != HAL_OK) // Pali interrupt (Timer kreće proitzvoditi interrupt), interrupt svaku sekundu ispisuje temp neovisno o poslu u glavnoj petlji
+		    {
+		      /* Starting Error */
+		      Error_Handler();//pomaže da precizno mjerimo temp, na taj na�?in sam postigao da ne izgubim ni jedno o�?itanje temperature
+		    }
+	if(provjeraPrvi && (HAL_GPIO_ReadPin(GPIOB, 2) == GPIO_PIN_RESET)){
+		mjerenjeOmoguceno = true;
 
-  /* USER CODE END DebugMonitor_IRQn 0 */
-	s = readAndPrintData(bmp280);
-	HAL_TIM_IRQHandler(&htim3);//sistemsko gašenje prekida
-  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
+		printf("EnableM\n");
+	}
+	if(provjeraDrugi && (HAL_GPIO_ReadPin(GPIOB, 10) == GPIO_PIN_RESET)){
+			mjerenjeOmoguceno = false;
+			s.temperature = 0.0;
+					printf("DisableM\n");
+		}
+	if(mjerenjeOmoguceno){
+		printf("mjerenjeOmoguceno \n");
+		HAL_NVIC_ClearPendingIRQ (EXTI15_10_IRQn);
+				HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+	}else{
+		HAL_NVIC_ClearPendingIRQ (EXTI2_IRQn);
+					HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+	}
+	provjeraPrvi = false;
+	provjeraDrugi = false;
+  /* USER CODE END TIM3_IRQn 0 */
 
-  /* USER CODE END DebugMonitor_IRQn 1 */
+  HAL_TIM_IRQHandler(&htim3);
+
+  /* USER CODE BEGIN TIM3_IRQn 1 */
+
+  /* USER CODE END TIM3_IRQn 1 */
 }
 
-/* USER CODE END 1 */
+/**
+  * @brief This function handles EXTI line[15:10] interrupts.
+  */
+void EXTI15_10_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI15_10_IRQn 0 */
+	printf("EXTI10\n");
+	HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
+	provjeraDrugi = true;
+			//HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+			if (HAL_TIM_Base_Start_IT(&htim3) != HAL_OK) // Pali interrupt (Timer kreće proitzvoditi interrupt), interrupt svaku sekundu ispisuje temp neovisno o poslu u glavnoj petlji
+				    {
+				      /* Starting Error */
+				      Error_Handler();//pomaže da precizno mjerimo temp, na taj na�?in sam postigao da ne izgubim ni jedno o�?itanje temperature
+				    }
+  /* USER CODE END EXTI15_10_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(stop_Pin);
+  //HAL_GPIO_EXTI_IRQHandler(B1_Pin);
+  /* USER CODE BEGIN EXTI15_10_IRQn 1 */
+
+  /* USER CODE END EXTI15_10_IRQn 1 */
+}
