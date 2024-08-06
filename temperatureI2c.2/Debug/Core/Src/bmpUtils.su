@@ -1,0 +1,2 @@
+../Core/Src/bmpUtils.c:6:22:initBmpSensor	80	static
+../Core/Src/bmpUtils.c:28:12:readAndPrintData	48	static
